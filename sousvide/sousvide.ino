@@ -69,9 +69,12 @@
 
 
 // ------------------------- LIBRARIES
-#include <LedControl.h>
+
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
 
 
 // ------------------------- CONSTANTS
@@ -196,7 +199,7 @@ unsigned long  tCheckNotHeatingWildly;
  pin 10 is connected to LOAD 
  We have 1 MAX7219.
 */
-LedControl lc=LedControl(12,11,10,1);
+LiquidCrystal_I2C lcd(0x20,16,2); 
 // Set up a oneWire instance and Dallas temperature sensor
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);	
@@ -210,12 +213,10 @@ void setup() {
 
 	Serial.begin(9600); 
 	/*
-	Initialize MAX7219 display driver
+	Initialize LCD
 	*/
-	  lc.shutdown(0,false);
-	  lc.setIntensity(0,2);
-	  lc.clearDisplay(0);
-
+	
+  lcd.init();
 	/*
 	Initialize pushButtons
 	*/
@@ -1358,117 +1359,25 @@ bool IsAcceleratingFall()
 }
 
 
-// ------------------------- 7-SEGMENT UTILITIES
+// ------------------------- LCD Utilities
 
-void printNumber(int wholePart, int decimalPart, boolean showDecimal, int displayAddress, int displaySide, boolean forceLowerRight) {
-    int ones;
-    int tens;
-    int hundreds;
-    int tenths;
-    int n = wholePart;  
-    // Erase and exit if wholePart does not fit
-    if (wholePart > 999) {
-        eraseDisplay(displayAddress, displaySide);
-        return;
-    }  
-      
-    // Manage ShowDecimal Case 
-    if (showDecimal && decimalPart < 10){
-      tenths = decimalPart;        
-    } else {
-      showDecimal = false;
-    }
-      
-    // Compute individual digits
-    ones= (int) (n%10);
-    n=n/10;
-    tens= (int) (n%10);
-    n=n/10;
-    hundreds= (int) n;			
-    
-    
-    // Print the number digit by digit (do not print leading zeroes)
-    if (showDecimal)
-    {
-      // ex : 153.2
-      if (wholePart > 99)     {
-        lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-(displaySide+3)),(byte)hundreds,false);
-      } else {
-        eraseDigit(displayAddress,displaySide,3);
-      }
-      if (wholePart > 9)      
-      { 
-        lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-(displaySide+2)),(byte)tens,false);
-      }else {
-        eraseDigit(displayAddress,displaySide,2);
-      }      
-      lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-(displaySide+1)),(byte)ones,true);
-      lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-displaySide),(byte)tenths,forceLowerRight);
-    } 
-    else
-    { 
-      // ex :  946
-      lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-(displaySide+3)),' ',false);
-      if (wholePart > 99)     {
-        lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-(displaySide+2)),(byte)hundreds,false);
-      } else {   
-        eraseDigit(displayAddress,displaySide,2);
-      }
-      if (wholePart > 9)      {
-        lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-(displaySide+1)),(byte)tens,false);
-      } else {
-        eraseDigit(displayAddress,displaySide,1);
-      }
-      lc.setDigit(displayAddress,abs(REVERSE_DISPLAY-displaySide),(byte)ones,forceLowerRight);
-    }
-}
-
-void eraseDigit(int displayAddress, int displaySide, int digitIndex) {
-    lc.setChar(displayAddress,abs(REVERSE_DISPLAY-(displaySide+digitIndex)),' ',false);
-}
-
-void eraseDisplay(int displayAddress, int displaySide) {       
-    // Erase the 4-digit
-    eraseDigit(displayAddress,displaySide,0);
-    eraseDigit(displayAddress,displaySide,1);
-    eraseDigit(displayAddress,displaySide,2);
-    eraseDigit(displayAddress,displaySide,3);
-}
-
-void eraseDisplay(int displayAddress) {       
-    // Erase the 2 sides of display
-    eraseDisplay(displayAddress, DISPLAY_LEFT);
-    eraseDisplay(displayAddress, DISPLAY_RIGHT);
-}
-
-void eraseDisplay() {       
-    // Erase all displays
-    for(int index=0;index<lc.getDeviceCount();index++) {
-      eraseDisplay(index);
-    }
-}
-
-void displayTemp(float temp, int side)
-{ 
-  boolean showDecimal = true;
-    
-  int decimalPart = (int) (((int)(temp * 100)) % 100); 
-  int tenths = decimalPart / 10;
-  
-  int hundredths =  decimalPart % 10;
-  if (hundredths > 5) 
-  tenths = tenths + 1 ; // round to closest digit
-  
-  printNumber((int) temp, tenths, showDecimal, TEMP_DISPLAY_DRIVER, side, false);
-}
 
 void displayActualTemp(float temp)
 {
-  displayTemp(temp, DISPLAY_LEFT);
+  
+  lcd.setCursor(0, 0);
+  lcd.print("Aktualna: ");
+  lcd.print(35.6,1);
+  lcd.print(char(223));
+  lcd.print("C");
 }
 void displayTargetTemp(float temp)
 {
-  displayTemp(temp, DISPLAY_RIGHT);
+  lcd.setCursor(0, 1);
+  lcd.print("Zadana:   ");
+  lcd.print(63.5,1);
+  lcd.print(char(223));
+  lcd.print("C");
 }
 
 

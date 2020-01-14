@@ -1,0 +1,5 @@
+{
+    "programmer": "ArduinoISP",
+    "board": "arduino:avr:uno",
+    "port": "/dev/cu.usbmodem145301"
+}
