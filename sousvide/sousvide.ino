@@ -81,8 +81,7 @@
 
 // 8 segment display drivers
 #define TEMP_DISPLAY_DRIVER 0
-#define DISPLAY_LEFT 4  //left 4 digits of display
-#define DISPLAY_RIGHT 0  //right 4 digits of display
+
 #define REVERSE_DISPLAY 0 //set to 7 if your displays first digit is on the left
 
 // push-buttons
@@ -199,7 +198,7 @@ unsigned long  tCheckNotHeatingWildly;
  pin 10 is connected to LOAD 
  We have 1 MAX7219.
 */
-LiquidCrystal_I2C lcd(0x20,16,2); 
+LiquidCrystal_I2C lcd(0x3F,16,2); 
 // Set up a oneWire instance and Dallas temperature sensor
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);	
@@ -217,6 +216,7 @@ void setup() {
 	*/
 	
   lcd.init();
+  lcd.backlight();
 	/*
 	Initialize pushButtons
 	*/
@@ -245,7 +245,7 @@ void setup() {
 
 	//prepare Relay port for writing
 	pinMode(RELAY_OUT_PIN, OUTPUT);  
-	digitalWrite(RELAY_OUT_PIN,LOW);
+	digitalWrite(RELAY_OUT_PIN,HIGH); //because I am using a relay activated with low state
 
 	tcurrent = millis();
 	maxUptimeMillis = MAX_UPTIME_HOURS * (unsigned long)3600 * (unsigned long)1000;
@@ -565,7 +565,7 @@ void Regulate()
 			}
 			// We already have ON and OFF durations
 			// perform regulation
-			if (digitalRead(RELAY_OUT_PIN) == LOW) {
+			if (digitalRead(RELAY_OUT_PIN) == HIGH) { //changed for low-state activated relay
 				// check if downtime over
 				if ( (long) (millis() - tBackToHigh) >= 0)
 				{
@@ -931,7 +931,7 @@ void PerformBoostTemp()
 		}		 
    } else {  
 		// switch ON heat and wait for tBackToLow
-		 if (digitalRead(RELAY_OUT_PIN) == LOW) {
+		 if (digitalRead(RELAY_OUT_PIN) == HIGH) { //changed for low-state activated relay
 		   turnOnRelay();
 		 }	 		 
 		 
@@ -1073,7 +1073,7 @@ void PerformFirstRamp()
     if (actualTemp > firstRampCutOffTemp) 
     {
 		// switch off heat and wait for stabilization
-       if (digitalRead(RELAY_OUT_PIN) == HIGH) {
+       if (digitalRead(RELAY_OUT_PIN) == LOW) {//changed for low-state activated relay
          Serial.print("STOP at actualTemp = ");
          Serial.println(actualTemp, DEC);
          turnOffRelay();  
@@ -1090,7 +1090,7 @@ void PerformFirstRamp()
        }        
     } else {
       // heat fullsteam ahead
-       if (digitalRead(RELAY_OUT_PIN) == LOW)     turnOnRelay();
+       if (digitalRead(RELAY_OUT_PIN) == HIGH)     turnOnRelay(); //changed for low-state activated relay
        
        // try to find how much time is needed for system to react to heat
        if (((long) (millis() - tCheckTakeOff) >= 0) && (tOperationalDelay == 0))
@@ -1143,7 +1143,7 @@ void FinishInitialRamping()
 void turnOnRelay()
 {
   	Serial.println("HEAT ON !");
-  digitalWrite(RELAY_OUT_PIN,HIGH);
+  digitalWrite(RELAY_OUT_PIN,LOW); //zmieniono z HIGH //changed for low-state activated relay
   tCheckNotHeatingWildly = millis() + ((unsigned long)60000 * MAX_HEATINGTIME_NO_TEMP_CHANGE_MINUTES);
   Serial.println("tCheckNotHeatingWildly =");
   Serial.println(tCheckNotHeatingWildly, DEC);
@@ -1153,7 +1153,8 @@ void turnOnRelay()
     
 void turnOffRelay()
 {
-  digitalWrite(RELAY_OUT_PIN,LOW);
+  digitalWrite(RELAY_OUT_PIN,HIGH); //zmieniono z LOW //changed for low-state activated relay
+ 
   tLastTurnOffRelay = millis();
   tCheckNotHeatingWildly = 0;
   isHeatOn = false;
@@ -1200,7 +1201,7 @@ void checkShutdownConditions(){
 
 void shutdownDevice() 
 {
-    eraseDisplay();
+    //eraseDisplay();
 	displayActualTemp(0);
 	displayTargetTemp(0);
 
@@ -1208,7 +1209,7 @@ void shutdownDevice()
         Serial.println("SHUTDOWN");
     }
     // turn off relay !
-    digitalWrite(RELAY_OUT_PIN,LOW);
+    digitalWrite(RELAY_OUT_PIN,HIGH); //changed for low-state activated relay
 	isHeatOn = false;
     while(1)
     {
@@ -1367,7 +1368,7 @@ void displayActualTemp(float temp)
   
   lcd.setCursor(0, 0);
   lcd.print("Aktualna: ");
-  lcd.print(35.6,1);
+  lcd.print(temp,1);
   lcd.print(char(223));
   lcd.print("C");
 }
@@ -1375,7 +1376,7 @@ void displayTargetTemp(float temp)
 {
   lcd.setCursor(0, 1);
   lcd.print("Zadana:   ");
-  lcd.print(63.5,1);
+  lcd.print(temp,1);
   lcd.print(char(223));
   lcd.print("C");
 }
@@ -1385,7 +1386,7 @@ void displayTargetTemp(float temp)
 
 void soundAlarm()
 {
-  //Serial.println("ALERT");
+  Serial.println("ALERT");
   for(int index=0;index<3;index++) {
     tone(PIEZO_PIN, 650, 1000);
     //Serial.println("BIIP");
